@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { 
   Mail, 
   Phone, 
@@ -13,6 +16,15 @@ import {
 } from 'lucide-react';
 
 const ContactSection = () => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+
   const contactInfo = [
     {
       icon: Phone,
@@ -58,10 +70,50 @@ const ContactSection = () => {
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted');
+    
+    // Validate form
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: formData
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message Sent! 🎉",
+        description: "Thank you for reaching out. I'll get back to you soon!",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -147,7 +199,10 @@ const ContactSection = () => {
                     </label>
                     <Input 
                       placeholder="Your Name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="bg-input/50 border-border focus:border-primary focus:ring-primary"
+                      required
                     />
                   </div>
                   <div>
@@ -157,7 +212,10 @@ const ContactSection = () => {
                     <Input 
                       type="email"
                       placeholder="your.email@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="bg-input/50 border-border focus:border-primary focus:ring-primary"
+                      required
                     />
                   </div>
                 </div>
@@ -168,7 +226,10 @@ const ContactSection = () => {
                   </label>
                   <Input 
                     placeholder="Project Collaboration"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="bg-input/50 border-border focus:border-primary focus:ring-primary"
+                    required
                   />
                 </div>
                 
@@ -179,17 +240,21 @@ const ContactSection = () => {
                   <Textarea 
                     placeholder="Let's discuss your project ideas..."
                     rows={5}
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="bg-input/50 border-border focus:border-primary focus:ring-primary resize-none"
+                    required
                   />
                 </div>
                 
                 <Button 
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 transition-transform neon-glow-cyan"
                   size="lg"
                 >
                   <Send className="w-5 h-5 mr-2" />
-                  Send Message
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
                 </Button>
               </form>
             </CardContent>
