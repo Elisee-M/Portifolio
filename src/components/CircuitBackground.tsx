@@ -1,7 +1,7 @@
 const CircuitBackground = () => {
   return (
-    <div className="fixed inset-0 pointer-events-none opacity-5 z-0">
-      <svg width="100%" height="100%" viewBox="0 0 1200 800" className="absolute inset-0">
+    <div className="fixed inset-0 pointer-events-none opacity-10 z-0 overflow-hidden">
+      <svg width="100%" height="100%" viewBox="0 0 1200 800" className="absolute inset-0" preserveAspectRatio="xMidYMid slice">
         <defs>
           <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
             {/* Horizontal lines */}
