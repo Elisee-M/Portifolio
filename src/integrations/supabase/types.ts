@@ -51,8 +51,6 @@ export type Database = {
         Row: {
           created_at: string
           demo_link: string | null
-          demo_password: string | null
-          demo_username: string | null
           description: string
           github_link: string | null
           id: string
@@ -64,8 +62,6 @@ export type Database = {
         Insert: {
           created_at?: string
           demo_link?: string | null
-          demo_password?: string | null
-          demo_username?: string | null
           description: string
           github_link?: string | null
           id?: string
@@ -77,8 +73,6 @@ export type Database = {
         Update: {
           created_at?: string
           demo_link?: string | null
-          demo_password?: string | null
-          demo_username?: string | null
           description?: string
           github_link?: string | null
           id?: string

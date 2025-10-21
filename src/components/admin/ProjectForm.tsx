@@ -15,8 +15,6 @@ const ProjectForm = () => {
     title: '',
     description: '',
     demo_link: '',
-    demo_username: '',
-    demo_password: '',
     tech: '',
     github_link: '',
   });
@@ -61,8 +59,6 @@ const ProjectForm = () => {
         title: '',
         description: '',
         demo_link: '',
-        demo_username: '',
-        demo_password: '',
         tech: '',
         github_link: '',
       });
@@ -142,28 +138,6 @@ const ProjectForm = () => {
               onChange={(e) => setFormData({ ...formData, demo_link: e.target.value })}
               className="border-primary/20 focus:border-primary"
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="demo_username">Demo Username (optional)</Label>
-              <Input
-                id="demo_username"
-                value={formData.demo_username}
-                onChange={(e) => setFormData({ ...formData, demo_username: e.target.value })}
-                className="border-primary/20 focus:border-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="demo_password">Demo Password (optional)</Label>
-              <Input
-                id="demo_password"
-                value={formData.demo_password}
-                onChange={(e) => setFormData({ ...formData, demo_password: e.target.value })}
-                className="border-primary/20 focus:border-primary"
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
