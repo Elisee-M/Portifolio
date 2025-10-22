@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ExternalLink, Github } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,6 +18,7 @@ interface Project {
 
 const ProjectsSection = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -61,7 +63,7 @@ const ProjectsSection = () => {
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 {/* Project Image */}
-                <div className="relative overflow-hidden">
+                <div className="relative overflow-hidden cursor-pointer" onClick={() => setZoomedImage({ url: project.image_url, title: project.title })}>
                   <img 
                     src={project.image_url} 
                     alt={project.title}
@@ -144,6 +146,17 @@ const ProjectsSection = () => {
           </Button>
         </div>
       </div>
+
+      {/* Image Zoom Dialog */}
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-5xl w-full p-0 bg-transparent border-0">
+          <img 
+            src={zoomedImage?.url} 
+            alt={zoomedImage?.title}
+            className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

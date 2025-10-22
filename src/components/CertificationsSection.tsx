@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ExternalLink } from 'lucide-react';
 
 interface Certification {
@@ -15,6 +16,7 @@ interface Certification {
 
 const CertificationsSection = () => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     fetchCertifications();
@@ -44,7 +46,7 @@ const CertificationsSection = () => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <CardContent className="p-0">
-                <div className="relative overflow-hidden rounded-t-lg">
+                <div className="relative overflow-hidden rounded-t-lg cursor-pointer" onClick={() => setZoomedImage({ url: cert.image_url, title: cert.title })}>
                   <img
                     src={cert.image_url}
                     alt={cert.title}
@@ -84,6 +86,17 @@ const CertificationsSection = () => {
           ))}
         </div>
       </div>
+
+      {/* Image Zoom Dialog */}
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-5xl w-full p-0 bg-transparent border-0">
+          <img 
+            src={zoomedImage?.url} 
+            alt={zoomedImage?.title}
+            className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
