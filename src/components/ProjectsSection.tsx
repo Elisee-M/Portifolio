@@ -19,10 +19,24 @@ interface Project {
 const ProjectsSection = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
+  const [limit, setLimit] = useState(4);
 
   useEffect(() => {
+    fetchSettings();
     fetchProjects();
   }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('setting_value')
+      .eq('setting_key', 'homepage_limits')
+      .single();
+    
+    if (data?.setting_value) {
+      setLimit((data.setting_value as { projects: number }).projects);
+    }
+  };
 
   const fetchProjects = async () => {
     const { data } = await supabase
@@ -32,6 +46,8 @@ const ProjectsSection = () => {
     
     if (data) setProjects(data);
   };
+
+  const displayedProjects = projects.slice(0, limit);
 
   // Normalize URLs: add https:// if protocol is missing
   const ensureHttpUrl = (url: string | null): string => {
@@ -53,10 +69,10 @@ const ProjectsSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {projects.length === 0 ? (
+          {displayedProjects.length === 0 ? (
             <p className="col-span-full text-center text-muted-foreground">No projects yet. Add some from the admin panel!</p>
           ) : (
-            projects.map((project, index) => (
+            displayedProjects.map((project, index) => (
               <Card 
                 key={project.id}
                 className="gradient-border bg-card/50 backdrop-blur-sm overflow-hidden hover:scale-105 transition-all duration-300 glow-hover group"
@@ -132,7 +148,22 @@ const ProjectsSection = () => {
         </div>
 
         {/* More Projects CTA */}
-        <div className="text-center mt-16">
+        {projects.length > limit && (
+          <div className="text-center mt-16">
+            <Button 
+              variant="default" 
+              size="lg"
+              className="bg-gradient-to-r from-primary to-secondary hover:scale-105 transition-all"
+              asChild
+            >
+              <a href="/projects">
+                View All Projects ({projects.length})
+              </a>
+            </Button>
+          </div>
+        )}
+        
+        <div className="text-center mt-8">
           <Button 
             variant="outline" 
             size="lg"
@@ -141,7 +172,7 @@ const ProjectsSection = () => {
           >
             <a href="https://github.com/Elisee-M" target="_blank" rel="noopener noreferrer">
               <Github className="w-5 h-5 mr-2" />
-              View All Projects on GitHub
+              GitHub Profile
             </a>
           </Button>
         </div>

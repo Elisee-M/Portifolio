@@ -9,10 +9,33 @@ import ProjectForm from '@/components/admin/ProjectForm';
 import CertificationForm from '@/components/admin/CertificationForm';
 import ProjectsList from '@/components/admin/ProjectsList';
 import CertificationsList from '@/components/admin/CertificationsList';
+import SiteSettings from '@/components/admin/SiteSettings';
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  tech: string[];
+  demo_link: string | null;
+  github_link: string | null;
+}
+
+interface Certification {
+  id: string;
+  title: string;
+  issuer: string;
+  issue_date: string;
+  image_url: string;
+  credential_url: string | null;
+}
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingCertification, setEditingCertification] = useState<Certification | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -86,19 +109,42 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="projects" className="space-y-8">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="certifications">Certifications</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="projects" className="space-y-8">
-            <ProjectForm />
-            <ProjectsList />
+            <ProjectForm 
+              editingProject={editingProject}
+              onSuccess={() => {
+                setEditingProject(null);
+                setRefreshKey(prev => prev + 1);
+              }}
+            />
+            <ProjectsList 
+              key={refreshKey}
+              onEdit={setEditingProject}
+            />
           </TabsContent>
 
           <TabsContent value="certifications" className="space-y-8">
-            <CertificationForm />
-            <CertificationsList />
+            <CertificationForm 
+              editingCertification={editingCertification}
+              onSuccess={() => {
+                setEditingCertification(null);
+                setRefreshKey(prev => prev + 1);
+              }}
+            />
+            <CertificationsList 
+              key={refreshKey}
+              onEdit={setEditingCertification}
+            />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-8">
+            <SiteSettings />
           </TabsContent>
         </Tabs>
       </div>

@@ -99,7 +99,7 @@ const ParticleBackground = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="particle-bg"
+      className="particle-bg opacity-40 md:opacity-60 lg:opacity-80"
       style={{
         position: 'fixed',
         top: 0,

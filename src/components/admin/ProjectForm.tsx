@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
 
-const ProjectForm = () => {
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  tech: string[];
+  demo_link: string | null;
+  github_link: string | null;
+}
+
+interface ProjectFormProps {
+  editingProject: Project | null;
+  onSuccess: () => void;
+}
+
+const ProjectForm = ({ editingProject, onSuccess }: ProjectFormProps) => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -20,41 +35,72 @@ const ProjectForm = () => {
   });
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (editingProject) {
+      setFormData({
+        title: editingProject.title,
+        description: editingProject.description,
+        demo_link: editingProject.demo_link || '',
+        tech: editingProject.tech.join(', '),
+        github_link: editingProject.github_link || '',
+      });
+    }
+  }, [editingProject]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) {
-      toast({ title: 'Please select an image', variant: 'destructive' });
-      return;
-    }
-
+    
     setLoading(true);
 
     try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let imageUrl = editingProject?.image_url || '';
 
-      const { error: uploadError } = await supabase.storage
-        .from('project-images')
-        .upload(filePath, imageFile);
+      // Upload new image if selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('project-images')
+          .upload(filePath, imageFile);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-images')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      const { error: insertError } = await supabase
-        .from('projects')
-        .insert({
-          ...formData,
-          image_url: publicUrl,
-          tech: formData.tech.split(',').map(t => t.trim()),
-        });
+        const { data: { publicUrl } } = supabase.storage
+          .from('project-images')
+          .getPublicUrl(filePath);
+        
+        imageUrl = publicUrl;
+      } else if (!editingProject) {
+        toast({ title: 'Please select an image', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
 
-      if (insertError) throw insertError;
+      const projectData = {
+        ...formData,
+        image_url: imageUrl,
+        tech: formData.tech.split(',').map(t => t.trim()),
+      };
 
-      toast({ title: 'Project added successfully!' });
+      if (editingProject) {
+        const { error } = await supabase
+          .from('projects')
+          .update(projectData)
+          .eq('id', editingProject.id);
+
+        if (error) throw error;
+        toast({ title: 'Project updated successfully!' });
+      } else {
+        const { error } = await supabase
+          .from('projects')
+          .insert(projectData);
+
+        if (error) throw error;
+        toast({ title: 'Project added successfully!' });
+      }
+
       setFormData({
         title: '',
         description: '',
@@ -63,6 +109,7 @@ const ProjectForm = () => {
         github_link: '',
       });
       setImageFile(null);
+      onSuccess();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -78,7 +125,7 @@ const ProjectForm = () => {
     <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-2xl bg-gradient-primary bg-clip-text text-transparent">
-          Add New Project
+          {editingProject ? 'Edit Project' : 'Add New Project'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -106,13 +153,13 @@ const ProjectForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Project Image</Label>
+            <Label htmlFor="image">Project Image {editingProject && '(leave empty to keep current)'}</Label>
             <Input
               id="image"
               type="file"
               accept="image/*"
               onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-              required
+              required={!editingProject}
               className="border-primary/20 focus:border-primary"
             />
           </div>
@@ -154,8 +201,13 @@ const ProjectForm = () => {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Upload className="mr-2 h-4 w-4" />
-            Add Project
+            {editingProject ? 'Update Project' : 'Add Project'}
           </Button>
+          {editingProject && (
+            <Button type="button" variant="outline" className="w-full" onClick={onSuccess}>
+              Cancel
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

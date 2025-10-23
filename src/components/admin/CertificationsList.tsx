@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 
 interface Certification {
   id: string;
@@ -11,9 +11,14 @@ interface Certification {
   issuer: string;
   issue_date: string;
   image_url: string;
+  credential_url: string | null;
 }
 
-const CertificationsList = () => {
+interface CertificationsListProps {
+  onEdit: (certification: Certification) => void;
+}
+
+const CertificationsList = ({ onEdit }: CertificationsListProps) => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const { toast } = useToast();
 
@@ -59,9 +64,14 @@ const CertificationsList = () => {
                 <p className="text-sm text-muted-foreground">{cert.issuer}</p>
                 <p className="text-xs text-muted-foreground">{new Date(cert.issue_date).toLocaleDateString()}</p>
               </div>
-              <Button variant="destructive" size="icon" onClick={() => handleDelete(cert.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={() => onEdit(cert)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="destructive" size="icon" onClick={() => handleDelete(cert.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

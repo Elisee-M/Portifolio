@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -11,9 +11,15 @@ interface Project {
   description: string;
   image_url: string;
   tech: string[];
+  demo_link: string | null;
+  github_link: string | null;
 }
 
-const ProjectsList = () => {
+interface ProjectsListProps {
+  onEdit: (project: Project) => void;
+}
+
+const ProjectsList = ({ onEdit }: ProjectsListProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const { toast } = useToast();
 
@@ -58,9 +64,14 @@ const ProjectsList = () => {
                 <h3 className="font-bold">{project.title}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
               </div>
-              <Button variant="destructive" size="icon" onClick={() => handleDelete(project.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={() => onEdit(project)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="destructive" size="icon" onClick={() => handleDelete(project.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

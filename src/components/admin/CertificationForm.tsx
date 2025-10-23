@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
 
-const CertificationForm = () => {
+interface Certification {
+  id: string;
+  title: string;
+  issuer: string;
+  issue_date: string;
+  image_url: string;
+  credential_url: string | null;
+}
+
+interface CertificationFormProps {
+  editingCertification: Certification | null;
+  onSuccess: () => void;
+}
+
+const CertificationForm = ({ editingCertification, onSuccess }: CertificationFormProps) => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -18,40 +32,70 @@ const CertificationForm = () => {
   });
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (editingCertification) {
+      setFormData({
+        title: editingCertification.title,
+        issuer: editingCertification.issuer,
+        issue_date: editingCertification.issue_date,
+        credential_url: editingCertification.credential_url || '',
+      });
+    }
+  }, [editingCertification]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) {
-      toast({ title: 'Please select a certificate image', variant: 'destructive' });
-      return;
-    }
-
+    
     setLoading(true);
 
     try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let imageUrl = editingCertification?.image_url || '';
 
-      const { error: uploadError } = await supabase.storage
-        .from('certificates')
-        .upload(filePath, imageFile);
+      // Upload new image if selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('certificates')
+          .upload(filePath, imageFile);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('certificates')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      const { error: insertError } = await supabase
-        .from('certifications')
-        .insert({
-          ...formData,
-          image_url: publicUrl,
-        });
+        const { data: { publicUrl } } = supabase.storage
+          .from('certificates')
+          .getPublicUrl(filePath);
+        
+        imageUrl = publicUrl;
+      } else if (!editingCertification) {
+        toast({ title: 'Please select a certificate image', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
 
-      if (insertError) throw insertError;
+      const certData = {
+        ...formData,
+        image_url: imageUrl,
+      };
 
-      toast({ title: 'Certification added successfully!' });
+      if (editingCertification) {
+        const { error } = await supabase
+          .from('certifications')
+          .update(certData)
+          .eq('id', editingCertification.id);
+
+        if (error) throw error;
+        toast({ title: 'Certification updated successfully!' });
+      } else {
+        const { error } = await supabase
+          .from('certifications')
+          .insert(certData);
+
+        if (error) throw error;
+        toast({ title: 'Certification added successfully!' });
+      }
+
       setFormData({
         title: '',
         issuer: '',
@@ -59,6 +103,7 @@ const CertificationForm = () => {
         credential_url: '',
       });
       setImageFile(null);
+      onSuccess();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -74,7 +119,7 @@ const CertificationForm = () => {
     <Card className="border-primary/20 bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-2xl bg-gradient-primary bg-clip-text text-transparent">
-          Add New Certification
+          {editingCertification ? 'Edit Certification' : 'Add New Certification'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -114,13 +159,13 @@ const CertificationForm = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cert-image">Certificate Image</Label>
+            <Label htmlFor="cert-image">Certificate Image {editingCertification && '(leave empty to keep current)'}</Label>
             <Input
               id="cert-image"
               type="file"
               accept="image/*"
               onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-              required
+              required={!editingCertification}
               className="border-primary/20 focus:border-primary"
             />
           </div>
@@ -139,8 +184,13 @@ const CertificationForm = () => {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Upload className="mr-2 h-4 w-4" />
-            Add Certification
+            {editingCertification ? 'Update Certification' : 'Add Certification'}
           </Button>
+          {editingCertification && (
+            <Button type="button" variant="outline" className="w-full" onClick={onSuccess}>
+              Cancel
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

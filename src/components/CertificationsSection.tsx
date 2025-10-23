@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ExternalLink } from 'lucide-react';
 
@@ -17,10 +18,24 @@ interface Certification {
 const CertificationsSection = () => {
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string } | null>(null);
+  const [limit, setLimit] = useState(4);
 
   useEffect(() => {
+    fetchSettings();
     fetchCertifications();
   }, []);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('setting_value')
+      .eq('setting_key', 'homepage_limits')
+      .single();
+    
+    if (data?.setting_value) {
+      setLimit((data.setting_value as { certifications: number }).certifications);
+    }
+  };
 
   const fetchCertifications = async () => {
     const { data } = await supabase
@@ -31,6 +46,8 @@ const CertificationsSection = () => {
     if (data) setCertifications(data);
   };
 
+  const displayedCertifications = certifications.slice(0, limit);
+
   return (
     <section id="certifications" className="py-20 px-4 relative z-10">
       <div className="max-w-6xl mx-auto">
@@ -39,7 +56,7 @@ const CertificationsSection = () => {
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {certifications.map((cert, index) => (
+          {displayedCertifications.map((cert, index) => (
             <Card
               key={cert.id}
               className="group border-primary/20 bg-card/50 backdrop-blur-sm hover:border-primary transition-all duration-300 hover:shadow-elegant animate-fade-in"
@@ -85,6 +102,22 @@ const CertificationsSection = () => {
             </Card>
           ))}
         </div>
+
+        {/* View All Button */}
+        {certifications.length > limit && (
+          <div className="text-center mt-12">
+            <Button 
+              variant="default" 
+              size="lg"
+              className="bg-gradient-to-r from-primary to-secondary hover:scale-105 transition-all"
+              asChild
+            >
+              <a href="/certifications">
+                View All Certifications ({certifications.length})
+              </a>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Image Zoom Dialog */}
